@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Activity Feed{% endblock %}
+
+{% block content %}
+	<section class="sidebar">
+		<form action="/filter/" method="GET" class="filter" id="filter">
+			<fieldset>
+				<legend>Activity Feed filters</legend>
+				<div>
+					<label>Creator</label>
+					<select name="creator" id="creator_filter">
+						<option value="" selected>all</option>
+						{% for creator in users %}
+						<option value="{{ creator.id }}">{{ creator }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div>
+					<label>Target</label>
+					<select name="target" id="target_filter">
+						<option value="" selected>all</option>
+						{% for target in users %}
+						<option value="{{ target.id }}">{{ target }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<input type="submit" value="Submit" />
+			</fieldset>
+			{% csrf_token %}
+		</form>
+		<section class="activity_list" id="activity_list">
+			<ul>
+			{% include activity_list_template %}
+			</ul>
+			<div class="pagination" id="pagination">
+			    <span class="step-links">
+			        {% if activities.has_previous %}
+			            <a href="{{ current_uri }}page/{{ activities.previous_page_number }}/">previous</a>
+			        {% endif %}
+
+			        <span class="current">
+			            Page {{ activities.number }} of {{ activities.paginator.num_pages }}
+			        </span>
+
+			        {% if activities.has_next %}
+			            <a href="{{ current_uri }}page/{{ activities.next_page_number }}/">next</a>
+			        {% endif %}
+			    </span>
+			</div>
+		</section>
+	</section>
+
+	<section class="add_activity" id="add_activity">
+		<form action="/new/" method="POST">
+			<fieldset>
+				<legend>Create Activity</legend>
+				<div>
+					<label>Creator</label>
+					<select name="creator" id="new_creator">
+						{% for creator in users %}
+						<option value="{{ creator.id }}">{{ creator }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div>
+					<label>Target</label>
+					<select name="target" id="new_target">
+						{% for target in users %}
+						<option value="{{ target.id }}">{{ target }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div>
+					<label>Type</label>
+					<select name="category" id="category">
+						{% for category in activity_categories %}
+						<option value="{{ category.content }}">{{ category.content }}</option>
+						{% endfor %}
+						<option value="">custom activity...</option>
+					</select>
+				</div>
+				<div id="activity_content">
+					<label>Content</label>
+					<textarea name="content"></textarea>
+				</div>
+				<input type="submit" value="Submit" />
+			</fieldset>
+			{% csrf_token %}
+		</form>
+	</section>
+{% endblock %}

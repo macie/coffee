@@ -1,0 +1,13 @@
+{% load endless %}
+{% load humanize %}
+
+{% paginate activities %}
+
+				{% for activity in activities %}
+				<li>
+					<div>{{ activity.content }}</div>
+					<div class="time">{{ activity.created|naturaltime }}</div>
+				</li>
+				{% endfor %}
+
+{% show_more %}
