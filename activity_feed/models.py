@@ -13,6 +13,11 @@ from activity_feed.decorators import cached
 from activity_feed.monkeypatches import InheritanceManager
 
 
+class UserManager(models.Manager):
+    def get(self):
+        return self.select_subclasses()
+
+
 class User(models.Model):
     """
     Generic user model.

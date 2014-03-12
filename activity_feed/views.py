@@ -3,6 +3,7 @@
 Django views.
 
 """
+from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from django.shortcuts import render
 
@@ -76,7 +77,10 @@ def filter_activities(request):
     uri = '/'
     if request.method == 'GET':
         creator = request.GET.get('creator')
+        creator = creator if creator != '' else None
+
         target = request.GET.get('target')
+        target = target if target != '' else None
 
         uri = _create_filter_uri(creator, target)
 
@@ -95,10 +99,6 @@ def _create_filter_uri(creator_id, target_id):
         A string with address.
 
     """
-    uri = '/'
-    if creator_id:
-        uri = '{}creator/{}/'.format(uri, creator_id)
-    if target_id:
-        uri = '{}target/{}/'.format(uri, target_id)
-
-    return uri
+    return reverse('activity_feed.views.activities',
+                   kwargs={'creator': creator_id,
+                           'target': target_id})

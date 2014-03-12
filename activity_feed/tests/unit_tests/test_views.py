@@ -88,6 +88,8 @@ class ViewsTestCase(TestCase):
         """
         request = mock.Mock()
         request.method = 'GET'
+        request.GET = {'creator': '',
+                       'target': ''}
 
         response = views.filter_activities(request)
         self.assertEqual(response.status_code, 302)  # redirect
