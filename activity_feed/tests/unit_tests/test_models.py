@@ -229,23 +229,29 @@ class ActivityTestCase(TestCase):
         Tests get_by method.
 
         """
-        # two ints
-        activities = models.Activity.objects.get_by(1, 2)
-        self.assertEqual(len(activities), 1)
-
         # two integers
         activities = models.Activity.objects.get_by('1', '2')
         self.assertEqual(len(activities), 1)
 
-        # no target
-        activities = models.Activity.objects.get_by(1, None)
+        # two ints
+        activities = models.Activity.objects.get_by(1, 2)
+        self.assertEqual(len(activities), 1)
+        activities = models.Activity.objects.get_by(2, 1)
         self.assertEqual(len(activities), 1)
 
-        # no creator
+        # no explicit target (all targets)
+        activities = models.Activity.objects.get_by(1, None)
+        self.assertEqual(len(activities), 1)
+        activities = models.Activity.objects.get_by(2, None)
+        self.assertEqual(len(activities), 1)
+
+        # no explicit creator (all creators)
+        activities = models.Activity.objects.get_by(None, 1)
+        self.assertEqual(len(activities), 1)
         activities = models.Activity.objects.get_by(None, 2)
         self.assertEqual(len(activities), 1)
 
-        # no target and no creator
+        # no explicit target and creator (all activities)
         activities = models.Activity.objects.get_by(None, None)
         self.assertEqual(len(activities), 2)
 
