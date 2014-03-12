@@ -20,15 +20,15 @@ def activities(request, creator=None, target=None, page=1):
     template = 'admin.html'
     list_template = 'activity_list.html'
 
-    activities = models.Activity.get_by(creator_id=creator,
-                                        target_id=target)
+    activities = models.Activity.objects.get_by(creator_id=creator,
+                                                target_id=target)
 
     if request.is_ajax():  # render activity list
         template = list_template
         context = {'activities': activities}
     else:  # render full page
         activity_categories = models.Activity.CATEGORIES
-        users = models.User.get_all()
+        users = models.User.objects.select_subclasses()
         uri = _create_filter_uri(creator, target)
 
         context = {'activities': activities,
@@ -51,14 +51,13 @@ def create_activity(request):
         category = request.POST.get('category')
         content = request.POST.get('content')
 
-        activity = models.Activity.create(creator_id=creator,
-                                          target_id=target,
-                                          category=category,
-                                          custom_content=content)
-        is_saved = activity.save()
+        activity = models.Activity.objects.create(creator_id=creator,
+                                                  target_id=target,
+                                                  category=category,
+                                                  custom_content=content)
 
         if request.is_ajax():
-            if is_saved:
+            if activity:
                 context = {'activities': [activity]}
                 return render(request, 'activity_list.html', context)
             else:

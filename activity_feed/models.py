@@ -5,17 +5,11 @@ Django models.
 """
 from __future__ import unicode_literals
 
-from django.core.cache import cache
+from django.core import exceptions
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
-from activity_feed.decorators import cached
 from activity_feed.monkeypatches import InheritanceManager
-
-
-class UserManager(models.Manager):
-    def get(self):
-        return self.select_subclasses()
 
 
 class User(models.Model):
@@ -24,32 +18,6 @@ class User(models.Model):
 
     """
     objects = InheritanceManager()
-
-    @classmethod
-    @cached('all_users')
-    def get_all(cls):
-        """
-        Returns a list of all inherited models.
-
-        Returns:
-            A QuerySet iterable object.
-
-        """
-        return cls.objects.select_subclasses()
-
-    @classmethod
-    def get_by_id(cls, user_id):
-        """
-        Returns a User object with specified id.
-
-        Attributes:
-            user_id (int or str): An ID of user.
-
-        Returns:
-            A User object.
-
-        """
-        return cls.objects.get(id=user_id)
 
 
 @python_2_unicode_compatible
@@ -63,18 +31,6 @@ class Employee(User):
 
     def __str__(self):
         return '{} {}'.format(self.first_name, self.last_name)
-
-    @classmethod
-    @cached('all_employees')
-    def get_all(cls):
-        """
-        Returns a list of all model instances.
-
-        Returns:
-            A QuerySet iterable object.
-
-        """
-        return cls.objects.all()
 
 
 @python_2_unicode_compatible
@@ -91,42 +47,19 @@ class CoffeeCompany(User):
     def __str__(self):
         return self.full_name
 
-    @classmethod
-    @cached('all_coffee_companies')
-    def get_all(cls):
+
+class ActivityManager(models.Manager):
+    def all(self):
         """
-        Returns a list of all model instances.
+        Returns a list of all model instances sorted by create date.
 
         Returns:
             A QuerySet iterable object.
 
         """
-        return cls.objects.all()
+        return super(ActivityManager, self).all().order_by('-created')
 
-
-@python_2_unicode_compatible
-class Activity(models.Model):
-    """
-    Activity model.
-
-    """
-    CATEGORIES = ({'id': 'invitation', 'content': 'invited'},
-                  {'id': 'drinking', 'content': 'drinked coffee from'},
-                  {'id': 'delivering', 'content': 'delivered product to'}, )
-
-    creator = models.ForeignKey(User, related_name='creators')
-    target = models.ForeignKey(User, related_name='targets')
-    content = models.TextField(default="")
-    created = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name_plural = 'activities'
-
-    def __str__(self):
-        return self.content
-
-    @classmethod
-    def create(cls, creator_id, target_id, category=None, custom_content=None):
+    def create(self, creator_id, target_id, category=None, custom_content=None):
         """
         Creates instance of Activity class.
 
@@ -143,30 +76,18 @@ class Activity(models.Model):
         content = ""
 
         if category:  # content from category, formatted for website
-            content = "{} {} {}".format(User.get_by_id(creator_id),
-                                        category,
-                                        User.get_by_id(target_id))
+            content = "{} {} {}".format(
+                User.objects.get(id=creator_id),
+                category,
+                User.objects.get(id=target_id))
         elif custom_content:  # custom content
             content = custom_content
 
-        return cls(creator_id=creator_id,
-                   target_id=target_id,
-                   content=content)
+        return super(ActivityManager, self).create(creator_id=creator_id,
+                                                   target_id=target_id,
+                                                   content=content)
 
-    @classmethod
-    @cached('all_activities')
-    def get_all(cls):
-        """
-        Returns a list of all model instances sorted by create date.
-
-        Returns:
-            A QuerySet iterable object.
-
-        """
-        return cls.objects.all().order_by('-created')
-
-    @classmethod
-    def get_by(cls, creator_id, target_id):
+    def get_by(self, creator_id, target_id):
         """
         Returns a list of activities filtered by creator and target.
 
@@ -178,26 +99,45 @@ class Activity(models.Model):
             A QuerySet iterable object.
 
         """
-        activities = cls.get_all()
+        activities = super(ActivityManager, self).all()
         if creator_id:
-            activities = activities.filter(creator__id__exact=creator_id)
+            activities = activities.filter(creator__id=creator_id)
         if target_id:
-            activities = activities.filter(target__id__exact=target_id)
+            activities = activities.filter(target__id=target_id)
 
         return activities
 
-    def save(self, *args, **kwargs):
-        """
-        Saves correct instance of model.
 
-        Returns:
-            A boolean value indicating that this method can create
-            correct activity instance.
+@python_2_unicode_compatible
+class Activity(models.Model):
+    """
+    Activity model.
 
-        """
+    """
+    CATEGORIES = ({'id': 'invitation', 'content': 'invited'},
+                  {'id': 'drinking', 'content': 'drinked coffee from'},
+                  {'id': 'delivering', 'content': 'delivered product to'}, )
+
+    creator = models.ForeignKey(User, related_name='creators')
+    target = models.ForeignKey(User, related_name='targets')
+    content = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+
+    objects = ActivityManager()
+
+    class Meta:
+        verbose_name_plural = 'activities'
+
+    def __str__(self):
+        return self.content
+
+    def clean(self, *args, **kwargs):
         if not self.content:  # incorrect activity, don't save
-            return False
-        else:  # correct activity
+            raise exceptions.ValidationError('Activities must have a content.')
+
+    def save(self, *args, **kwargs):
+        try:
+            self.clean()
             super(Activity, self).save(*args, **kwargs)
-            cache.delete('all_activities')  # new activity - clear cache
-            return True
+        except exceptions.ValidationError:
+            pass

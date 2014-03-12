@@ -24,29 +24,29 @@ class UserTestCase(TestCase):
 
     def test_get_all(self):
         """
-        Tests get_all method.
+        Tests select_subclasses method.
 
         """
         # all user
-        result = models.User.get_all()
-        self.assertEqual(len(result), 5)
+        users = models.User.objects.select_subclasses()
+        self.assertEqual(len(users), 5)
 
         # employees
         employees = [
-            user for user in result if isinstance(user, models.Employee)]
+            user for user in users if isinstance(user, models.Employee)]
         self.assertEqual(len(employees), 3)
 
         # coffee companies
         companies = [
-            user for user in result if isinstance(user, models.CoffeeCompany)]
+            user for user in users if isinstance(user, models.CoffeeCompany)]
         self.assertEqual(len(companies), 2)
 
     def test_get_by_id(self):
         """
-        Tests get_by_id method.
+        Tests get method.
 
         """
-        get_user = lambda n: models.User.get_by_id(n)
+        get_user = lambda n: models.User.objects.get(id=n)
         employee = models.Employee
         coffee_company = models.CoffeeCompany
 
@@ -78,26 +78,21 @@ class EmployeeTestCase(TestCase):
         employee.last_name = 'Wójcik'
 
         if six.PY2:
-            result = models.Employee.__unicode__(employee)
+            name = models.Employee.__unicode__(employee)
         else:  # python 3
-            result = models.Employee.__str__(employee)
+            name = models.Employee.__str__(employee)
 
-        self.assertEqual(result, 'Marek Wójcik')
+        self.assertEqual(name, 'Marek Wójcik')
 
     def test_get_all(self):
         """
-        Tests get_all method.
+        Tests all method.
 
         """
-        with mock.patch('activity_feed.models.Employee.objects') as m:
-            mocked_method = m.all()
-            result = models.Employee.get_all()
-            self.assertEqual(result, mocked_method)
-
         mommy.make('Employee', _quantity=3)       # user_id = [1, 2, 3]
         mommy.make('CoffeeCompany', _quantity=2)  # user_id = [4, 5]
-        result = models.Employee.get_all()
-        self.assertEqual(len(result), 3)
+        employees = models.Employee.objects.all()
+        self.assertEqual(len(employees), 3)
 
 
 class CoffeeCompanyTestCase(TestCase):
@@ -114,26 +109,21 @@ class CoffeeCompanyTestCase(TestCase):
         company.full_name = 'Producent kawy'
 
         if six.PY2:
-            result = models.CoffeeCompany.__unicode__(company)
+            name = models.CoffeeCompany.__unicode__(company)
         else:  # python 3
-            result = models.CoffeeCompany.__str__(company)
+            name = models.CoffeeCompany.__str__(company)
 
-        self.assertEqual(result, 'Producent kawy')
+        self.assertEqual(name, 'Producent kawy')
 
     def test_get_all(self):
         """
-        Tests get_all method.
+        Tests all method.
 
         """
-        with mock.patch('activity_feed.models.CoffeeCompany.objects') as m:
-            mocked_method = m.all()
-            result = models.CoffeeCompany.get_all()
-            self.assertEqual(result, mocked_method)
-
         mommy.make('Employee', _quantity=3)       # user_id = [1, 2, 3]
         mommy.make('CoffeeCompany', _quantity=2)  # user_id = [4, 5]
-        result = models.CoffeeCompany.get_all()
-        self.assertEqual(len(result), 2)
+        companies = models.CoffeeCompany.objects.all()
+        self.assertEqual(len(companies), 2)
 
 
 class ActivityTestCase(TestCase):
@@ -177,11 +167,11 @@ class ActivityTestCase(TestCase):
         activity.content = 'Ktoś zaprosił kogoś'
 
         if six.PY2:
-            result = models.Activity.__unicode__(activity)
+            content = models.Activity.__unicode__(activity)
         else:  # python 3
-            result = models.Activity.__str__(activity)
+            content = models.Activity.__str__(activity)
 
-        self.assertEqual(result, 'Ktoś zaprosił kogoś')
+        self.assertEqual(content, 'Ktoś zaprosił kogoś')
 
     def test_create(self):
         """
@@ -191,7 +181,7 @@ class ActivityTestCase(TestCase):
         activity = models.Activity.objects.get(id=1)
 
         # category, no custom_content
-        new_activity = models.Activity.create(
+        new_activity = models.Activity.objects.create(
             creator_id=1,
             target_id=2,
             category='drinked coffee from')
@@ -200,7 +190,7 @@ class ActivityTestCase(TestCase):
         self.assertEqual(new_activity.content, activity.content)
 
         # no category, custom_content
-        new_activity = models.Activity.create(
+        new_activity = models.Activity.objects.create(
             creator_id=1,
             target_id=2,
             custom_content='Jan Wójt drinked coffee from Kawa')
@@ -209,7 +199,7 @@ class ActivityTestCase(TestCase):
         self.assertEqual(new_activity.content, activity.content)
 
         # category, custom_content
-        new_activity = models.Activity.create(
+        new_activity = models.Activity.objects.create(
             creator_id=1,
             target_id=2,
             category='drinked coffee from',
@@ -219,7 +209,7 @@ class ActivityTestCase(TestCase):
         self.assertEqual(new_activity.content, activity.content)
 
         # no category, no custom_content
-        activity = models.Activity.create(
+        activity = models.Activity.objects.create(
             creator_id=1,
             target_id=2)
         self.assertStrEqual(new_activity.creator, activity.creator)
@@ -228,11 +218,11 @@ class ActivityTestCase(TestCase):
 
     def test_get_all(self):
         """
-        Tests get_all method.
+        Tests all method.
 
         """
-        result = models.Activity.get_all()
-        self.assertEqual(len(result), 2)
+        activities = models.Activity.objects.all()
+        self.assertEqual(len(activities), 2)
 
     def test_get_by(self):
         """
@@ -240,24 +230,24 @@ class ActivityTestCase(TestCase):
 
         """
         # two ints
-        result = models.Activity.get_by(1, 2)
-        self.assertEqual(len(result), 1)
+        activities = models.Activity.objects.get_by(1, 2)
+        self.assertEqual(len(activities), 1)
 
         # two integers
-        result = models.Activity.get_by('1', '2')
-        self.assertEqual(len(result), 1)
+        activities = models.Activity.objects.get_by('1', '2')
+        self.assertEqual(len(activities), 1)
 
         # no target
-        result = models.Activity.get_by(1, None)
-        self.assertEqual(len(result), 1)
+        activities = models.Activity.objects.get_by(1, None)
+        self.assertEqual(len(activities), 1)
 
         # no creator
-        result = models.Activity.get_by(None, 2)
-        self.assertEqual(len(result), 1)
+        activities = models.Activity.objects.get_by(None, 2)
+        self.assertEqual(len(activities), 1)
 
         # no target and no creator
-        result = models.Activity.get_by(None, None)
-        self.assertEqual(len(result), 2)
+        activities = models.Activity.objects.get_by(None, None)
+        self.assertEqual(len(activities), 2)
 
     def test_save(self):
         """
@@ -269,15 +259,13 @@ class ActivityTestCase(TestCase):
                                    target_id=2)
 
         # no content
-        is_saved = activity.save()
-        self.assertFalse(is_saved)
+        activity.save()
         with self.assertRaises(exceptions.ObjectDoesNotExist):
             models.Activity.objects.get(id=3)
 
         # content
         activity.content = "content of activity 3"
-        is_saved = activity.save()
-        self.assertTrue(is_saved)
+        activity.save()
         self.assertTrue(models.Activity.objects.get(id=3))
 
         # cleanup

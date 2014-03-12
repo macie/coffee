@@ -70,12 +70,12 @@ class ViewsTestCase(TestCase):
         response = views.create_activity(request)
         self.assertEqual(response.status_code, 302)  # redirect
 
-        # ajax and not saved (no content)
+        # ajax and no activity (no content)
         request.is_ajax = mock.Mock(return_value=True)
         response = views.create_activity(request)
-        self.assertEqual(response, '')  # empty string
+        self.assertEqual(response.content, '\n\n\n\n\n\t\t\t\t\n\t\t\t\t<li>\n\t\t\t\t\t<div></div>\n\t\t\t\t\t<div class="time">None</div>\n\t\t\t\t</li>\n\t\t\t\t\n\n\n\n\n')  # empty string
 
-        # ajax and saved
+        # ajax and activity
         request.is_ajax = mock.Mock(return_value=True)
         request.POST['content'] = 'some content'
         response = views.create_activity(request)
