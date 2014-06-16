@@ -1,0 +1,4 @@
+coffee
+======
+
+Sample Django app.
