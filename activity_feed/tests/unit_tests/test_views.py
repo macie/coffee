@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Unit tests for views.
 
@@ -74,6 +74,14 @@ class ViewsTestCase(TestCase):
         request.is_ajax = mock.Mock(return_value=True)
         response = views.create_activity(request)
         self.assertEqual(response.content, '\n\n\n\n\n\t\t\t\t\n\t\t\t\t<li>\n\t\t\t\t\t<div></div>\n\t\t\t\t\t<div class="time">None</div>\n\t\t\t\t</li>\n\t\t\t\t\n\n\n\n\n')  # empty string
+
+        # ajax and no activity (create error)
+        request.is_ajax = mock.Mock(return_value=True)
+        with mock.patch(
+                'activity_feed.views.models.Activity.objects.create') as m:
+            m.return_value = False
+            response = views.create_activity(request)
+            self.assertEqual(response, '')  # empty response
 
         # ajax and activity
         request.is_ajax = mock.Mock(return_value=True)

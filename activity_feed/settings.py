@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Django settings for activity_feed project.
 
@@ -102,5 +103,7 @@ CACHES = {
 }
 
 TEST_RUNNER = 'django_coverage.coverage_runner.CoverageRunner'
+
+COVERAGE_MODULE_EXCLUDES = ['django', 'endless_pagination', 'migrations', 'settings', 'south', 'tests']
 
 SOUTH_TESTS_MIGRATE = False
